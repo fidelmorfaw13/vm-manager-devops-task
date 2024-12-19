@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <h2>Welcome, <span id="username-display"></span></h2>
+        <button id="logoutButton">Logout</button>
+
+        <div class="instance-creation">
+            <h3>Create a new EC2 instance</h3>
+            <form id="createInstanceForm">
+                <label for="instanceType">Instance Type:</label>
+                <input type="text" id="instanceType" placeholder="Instance Type (e.g., t2.micro)" required>
+                
+                <label for="osType">Operating System:</label>
+                <select id="osType" required>
+                    <option value="linux">Linux</option>
+                    <option value="windows">Windows</option>
+                </select>
+                
+                <button type="submit">Create Instance</button>
+            </form>
+        </div>
+
+        <div class="instance-list">
+            <h3>Your EC2 Instances</h3>
+            <ul id="instancesList"></ul>
+        </div>
+    </div>
+
+    <script src="config.js"></script> <!-- Load the configuration file -->
+    <script>
+        const BACKEND_URL = CONFIG.BACKEND_URL;
+        const username = localStorage.getItem('username');
+        document.getElementById('username-display').innerText = username;
+
+        async function fetchInstances() {
+            const response = await fetch(`${BACKEND_URL}/instances`, {
+                method: 'GET',
+                headers: {
+                    'username': username,
+                    'password': 'password1', // Use actual user password for real auth
+                }
+            });
+
+            if (!response.ok) {
+                alert('Failed to fetch instances');
+                return;
+            }
+
+            const data = await response.json();
+            const instancesList = document.getElementById('instancesList');
+            instancesList.innerHTML = '';
+            if (data.instances && data.instances.length > 0) {
+                data.instances.forEach((instanceId) => {
+                    const listItem = document.createElement('li');
+                    listItem.innerText = instanceId;
+                    const deleteButton = document.createElement('button');
+                    deleteButton.innerText = 'Delete';
+                    deleteButton.onclick = () => deleteInstance(instanceId);
+                    listItem.appendChild(deleteButton);
+                    instancesList.appendChild(listItem);
+                });
+            } else {
+                instancesList.innerHTML = '<li>No instances available</li>';
+            }
+        }
+
+        document.getElementById('createInstanceForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const instanceType = document.getElementById('instanceType').value;
+            const osType = document.getElementById('osType').value;
+
+            const response = await fetch(`${BACKEND_URL}/create_instance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'username': username,
+                    'password': 'password1', // Use actual user password for real auth
+                },
+                body: JSON.stringify({ instance_type: instanceType, os_type: osType })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert('Instance created successfully!');
+                fetchInstances();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+
+        async function deleteInstance(instanceId) {
+            const response = await fetch(`${BACKEND_URL}/delete_instance`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'username': username,
+                    'password': 'password1', // Use actual user password for real auth
+                },
+                body: JSON.stringify({ instance_id: instanceId })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                alert('Instance deleted successfully!');
+                fetchInstances();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        }
+
+        window.onload = fetchInstances;
+
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            localStorage.removeItem('username');
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>
+
