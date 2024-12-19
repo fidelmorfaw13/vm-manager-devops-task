@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
   build_and_push:
@@ -17,12 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Login to Amazon ECR
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v1
-
-      # Set up AWS credentials
+      # Configure AWS credentials and set region
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -30,16 +22,18 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # Login to Amazon ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
       # Build and push the backend image
       - name: Build and push backend image
-        if: github.event_name == 'push' || contains(github.event.head_commit.message, 'backend')
         run: |
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest .
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest
 
       # Build and push the frontend image
       - name: Build and push frontend image
-        if: github.event_name == 'push' || contains(github.event.head_commit.message, 'frontend')
         run: |
           cd templates
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:latest .
@@ -54,7 +48,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Set up AWS credentials
+      # Configure AWS credentials and set region
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
