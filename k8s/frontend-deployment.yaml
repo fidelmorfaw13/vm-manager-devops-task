@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: 361769558141.dkr.ecr.us-east-2.amazonaws.com/frontend:v1
+          image: 361769558141.dkr.ecr.us-east-2.amazonaws.com/frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80  # Assuming Nginx is running on port 80
