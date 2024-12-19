@@ -85,7 +85,6 @@ jobs:
 
       # Deploy backend to EKS
       - name: Deploy backend
-        run: kubectl apply -f k8s/backend-deployment.yaml
-
-      # Deploy frontend to EKS
+        run: kubectl apply -f k8s/backend-deployment.yaml 
+      - name: Deploy frontend
         run: kubectl apply -f k8s/frontend-deployment.yaml
