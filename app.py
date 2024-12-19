@@ -5,7 +5,7 @@ import configparser
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__) 
 
 # Enable CORS for all routes
 CORS(app)
