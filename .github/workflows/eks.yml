@@ -10,11 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Configure AWS credentials and set region
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -22,11 +20,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Login to Amazon ECR
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Build and push the backend image
       - name: Build and push backend image
         run: |
           IMAGE_TAG=${{ github.sha }}
@@ -34,7 +30,6 @@ jobs:
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}
           echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
 
-      # Build and push the frontend image
       - name: Build and push frontend image
         run: |
           IMAGE_TAG=${{ github.sha }}
@@ -48,11 +43,9 @@ jobs:
     needs: build_and_push
 
     steps:
-      # Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Configure AWS credentials and set region
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -60,30 +53,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Install kubectl
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
           kubectl-version: 'latest'
 
-      # Update kubeconfig for the EKS cluster
       - name: Configure kubeconfig
         run: |
           aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
-      - name: Update backend deployment image
+      - name: Deploy backend to EKS
         run: |
-          sed -i "s|image: .*|image: ${{ env.BACKEND_IMAGE }}|" k8s/backend-deployment.yaml
-          cat k8s/backend-deployment.yaml
-
-      # Update frontend deployment image
-      - name: Update frontend deployment image
+          kubectl set image deployment/backend backend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${{ github.sha }}
+      
+      - name: Deploy frontend to EKS
         run: |
-          sed -i "s|image: .*|image: ${{ env.FRONTEND_IMAGE }}|" k8s/frontend-deployment.yaml
-          cat k8s/frontend-deployment.yaml
-
-      # Deploy backend to EKS
-      - name: Deploy backend
-        run: kubectl apply -f k8s/backend-deployment.yaml 
-      - name: Deploy frontend
-        run: kubectl apply -f k8s/frontend-deployment.yaml
+          kubectl set image deployment/frontend frontend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
