@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: backend
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: backend
@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 361769558141.dkr.ecr.us-east-2.amazonaws.com/backend:latest  # Replace with your image tag if necessary
+          image: 361769558141.dkr.ecr.us-east-2.amazonaws.com/backend:latest  
+          imagePullPolicy: Always 
           ports:
             - containerPort: 5000  # Assuming Flask is running on port 5000
 ---
@@ -30,3 +31,4 @@ spec:
       port: 80
       targetPort: 5000
   type: ClusterIP  # or LoadBalancer if you want external access
+
