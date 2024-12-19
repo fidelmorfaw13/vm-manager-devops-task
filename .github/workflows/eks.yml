@@ -71,7 +71,6 @@ jobs:
         run: |
           aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
-      # Update backend deployment image
       - name: Update backend deployment image
         run: |
           sed -i "s|image: .*|image: ${{ env.BACKEND_IMAGE }}|" k8s/backend-deployment.yaml
