@@ -4,13 +4,28 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'templates/**' # Frontend code
+      - 'app.py'       # Backend code
+      - 'Dockerfile'   # Backend Dockerfile
+      - 'k8s/**'       # Kubernetes manifests
 
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [frontend, backend]
+        include:
+          - service: frontend
+            paths: ['templates/**']
+          - service: backend
+            paths: ['app.py', 'Dockerfile']
+
+    if: ${{ github.event.paths.* contains matrix.paths }}
 
     steps:
-      # Checkout the repository code
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -26,25 +41,30 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Build and push the backend image
-      - name: Build and push backend image
-        run: |
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest
-
-      # Build and push the frontend image
+      # Build and push frontend image
       - name: Build and push frontend image
+        if: matrix.service == 'frontend'
         run: |
           cd templates
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:latest .
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:latest
 
+      # Build and push backend image
+      - name: Build and push backend image
+        if: matrix.service == 'backend'
+        run: |
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest
+
   deploy_to_eks:
     runs-on: ubuntu-latest
     needs: build_and_push
+    strategy:
+      matrix:
+        service: [frontend, backend]
 
     steps:
-      # Checkout the repository code
+      # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -67,10 +87,12 @@ jobs:
         run: |
           aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
-      # Deploy backend to EKS
-      - name: Deploy backend
-        run: kubectl apply -f k8s/backend-deployment.yaml
-
       # Deploy frontend to EKS
       - name: Deploy frontend
+        if: matrix.service == 'frontend'
         run: kubectl apply -f k8s/frontend-deployment.yaml
+
+      # Deploy backend to EKS
+      - name: Deploy backend
+        if: matrix.service == 'backend'
+        run: kubectl apply -f k8s/backend-deployment.yaml
