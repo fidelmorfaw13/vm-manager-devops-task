@@ -6,21 +6,26 @@ on:
       - main
   pull_request:
     types: [opened, synchronize, reopened]
-
 jobs:
   sonarqube:
-    name: SonarQube Analysis
+    name: SonarQube
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensures a full clone for better analysis
+          fetch-depth: 0  # Ensures full history for better analysis
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v4
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Required for PR information
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # SonarQube authentication token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # For PR details, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Authentication token
+        with:
+          args: >
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }}
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }}
+
 
   build_and_push:
     name: Build and Push Images
