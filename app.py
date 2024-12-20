@@ -57,7 +57,7 @@ def create_instance(username, instance_type, os_type):
         users[username]['instances'].append(instance_id)
         return instance_id
     except Exception as e:
-        print(f"Error creating instance: {e}")
+        print(f"Error creating instance for {username}: {e}")
         return None
 
 @app.route('/login', methods=['POST'])
@@ -100,10 +100,18 @@ def get_instances():
     username = request.headers.get('username')
     password = request.headers.get('password')
     
+    print(f"Fetching instances for user: {username}")
+    
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
+        print("Authentication failed.")
         return jsonify({'error': 'Unauthorized'}), 403
     
+    if not user['instances']:
+        print(f"No instances found for {username}.")
+        return jsonify({'error': 'No instances found'}), 404
+    
+    print(f"Instances for {username}: {user['instances']}")
     return jsonify({'instances': user['instances']})
 
 @app.route('/delete_instance', methods=['POST'])
