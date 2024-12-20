@@ -36,15 +36,26 @@
     <script src="config.js"></script> <!-- Load the configuration file -->
     <script>
         const BACKEND_URL = CONFIG.BACKEND_URL;
+
+        // Get the logged-in user's username from localStorage
         const username = localStorage.getItem('username');
         document.getElementById('username-display').innerText = username;
 
+        // Map to store user passwords securely
+        const userPasswords = {
+            'user1': 'password1',
+            'user2': 'password2'
+        };
+
+        // Function to fetch the instances for the logged-in user
         async function fetchInstances() {
+            const password = userPasswords[username]; // Use the password based on the current username
+
             const response = await fetch(`${BACKEND_URL}/instances`, {
                 method: 'GET',
                 headers: {
                     'username': username,
-                    'password': 'password1', // Use actual user password for real auth
+                    'password': password, // Use the correct password based on the logged-in user
                 }
             });
 
@@ -55,7 +66,8 @@
 
             const data = await response.json();
             const instancesList = document.getElementById('instancesList');
-            instancesList.innerHTML = '';
+            instancesList.innerHTML = ''; // Clear the list
+
             if (data.instances && data.instances.length > 0) {
                 data.instances.forEach((instanceId) => {
                     const listItem = document.createElement('li');
@@ -71,17 +83,19 @@
             }
         }
 
+        // Event listener for form submission to create a new EC2 instance
         document.getElementById('createInstanceForm').addEventListener('submit', async (event) => {
             event.preventDefault();
             const instanceType = document.getElementById('instanceType').value;
             const osType = document.getElementById('osType').value;
+            const password = userPasswords[username]; // Use the password based on the current username
 
             const response = await fetch(`${BACKEND_URL}/create_instance`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'username': username,
-                    'password': 'password1', // Use actual user password for real auth
+                    'password': password, // Use the correct password based on the logged-in user
                 },
                 body: JSON.stringify({ instance_type: instanceType, os_type: osType })
             });
@@ -89,19 +103,22 @@
             const data = await response.json();
             if (response.ok) {
                 alert('Instance created successfully!');
-                fetchInstances();
+                fetchInstances(); // Refresh the instances list
             } else {
                 alert('Error: ' + data.error);
             }
         });
 
+        // Function to delete an instance
         async function deleteInstance(instanceId) {
+            const password = userPasswords[username]; // Use the password based on the current username
+
             const response = await fetch(`${BACKEND_URL}/delete_instance`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'username': username,
-                    'password': 'password1', // Use actual user password for real auth
+                    'password': password, // Use the correct password based on the logged-in user
                 },
                 body: JSON.stringify({ instance_id: instanceId })
             });
@@ -109,19 +126,20 @@
             const data = await response.json();
             if (response.ok) {
                 alert('Instance deleted successfully!');
-                fetchInstances();
+                fetchInstances(); // Refresh the instances list
             } else {
                 alert('Error: ' + data.error);
             }
         }
 
+        // Fetch the instances when the page loads
         window.onload = fetchInstances;
 
+        // Event listener for logout button
         document.getElementById('logoutButton').addEventListener('click', () => {
-            localStorage.removeItem('username');
-            window.location.href = 'index.html';
+            localStorage.removeItem('username'); // Remove username from localStorage
+            window.location.href = 'index.html'; // Redirect to the login page
         });
     </script>
 </body>
 </html>
-
