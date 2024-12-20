@@ -97,7 +97,7 @@ def delete_instance():
     instance_id = data.get('instance_id')
     
     if instance_id not in user['instances']:
-        return jsonify({'error': 'Cannot delete instance created by another user'}), 403
+        return jsonify({'error': 'processing'}), 403
 
     # Terminate EC2 instance
     ec2_client.terminate_instances(InstanceIds=[instance_id])
