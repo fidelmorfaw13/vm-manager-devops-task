@@ -60,6 +60,7 @@ def create_instance(username, instance_type, os_type):
         print(f"Error creating instance for {username}: {e}")
         return None
 
+# Route to login user
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -72,22 +73,25 @@ def login():
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
 
+# Route to create EC2 instance for the authenticated user
 @app.route('/create_instance', methods=['POST'])
 def create_instance_route():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
     
-    # Validate user
+    # Validate user authentication
     print(f"Received username: {username}, password: {password}")
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
         print("Authentication failed.")
         return jsonify({'error': 'Unauthorized'}), 403
     
+    # Get instance parameters from request body
     instance_type = data.get('instance_type')
     os_type = data.get('os_type')
     
+    # Create instance for user
     instance_id = create_instance(username, instance_type, os_type)
     
     if instance_id:
@@ -95,6 +99,7 @@ def create_instance_route():
     else:
         return jsonify({'error': 'Failed to create instance'}), 500
 
+# Route to fetch the instances of the authenticated user
 @app.route('/instances', methods=['GET'])
 def get_instances():
     username = request.headers.get('username')
@@ -114,13 +119,14 @@ def get_instances():
     print(f"Instances for {username}: {user['instances']}")
     return jsonify({'instances': user['instances']})
 
+# Route to delete an EC2 instance for the authenticated user
 @app.route('/delete_instance', methods=['POST'])
 def delete_instance():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
     
-    # Validate user
+    # Validate user authentication
     print(f"Received username: {username}, password: {password}")
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
@@ -144,5 +150,6 @@ def delete_instance():
     
     return jsonify({'message': 'Instance deleted successfully'})
 
+# Running the app
 if __name__ == '__main__':
     app.run(debug=True)
