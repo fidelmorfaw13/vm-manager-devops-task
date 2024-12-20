@@ -19,15 +19,10 @@ aws_secret_key = config['default']['aws_secret_access_key']
 region = config['default']['region']
 
 # AWS EC2 client using credentials from the file
-try:
-    ec2_client = boto3.client('ec2',
-                              aws_access_key_id=aws_access_key,
-                              aws_secret_access_key=aws_secret_key,
-                              region_name=region)
-    print("EC2 client initialized successfully.")
-except Exception as e:
-    print(f"Error initializing EC2 client: {e}")
-    ec2_client = None
+ec2_client = boto3.client('ec2', 
+                          aws_access_key_id=aws_access_key,
+                          aws_secret_access_key=aws_secret_key,
+                          region_name=region)
 
 # Sample in-memory user storage
 users = {
@@ -37,30 +32,17 @@ users = {
 
 # Helper function to create EC2 instance
 def create_instance(username, instance_type, os_type):
-    if not ec2_client:
-        return None  # If EC2 client is not initialized, return None
-    
-    try:
-        ami_id = 'ami-0c55b159cbfafe1f0' if os_type == 'linux' else 'ami-0d5d9d301c853a04a'  # Modify for your region
-        print(f"Creating instance for user: {username}, OS: {os_type}, Type: {instance_type}")
-        
-        instance = ec2_client.run_instances(
-            ImageId=ami_id,
-            InstanceType=instance_type,
-            MinCount=1,
-            MaxCount=1
-        )
-        
-        instance_id = instance['Instances'][0]['InstanceId']
-        print(f"Instance created with ID: {instance_id}")
-        
-        users[username]['instances'].append(instance_id)
-        return instance_id
-    except Exception as e:
-        print(f"Error creating instance for {username}: {e}")
-        return None
+    ami_id = 'ami-0c55b159cbfafe1f0' if os_type == 'linux' else 'ami-0d5d9d301c853a04a'  # Modify for your region
+    instance = ec2_client.run_instances(
+        ImageId=ami_id,
+        InstanceType=instance_type,
+        MinCount=1,
+        MaxCount=1
+    )
+    instance_id = instance['Instances'][0]['InstanceId']
+    users[username]['instances'].append(instance_id)
+    return instance_id
 
-# Route to login user
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
@@ -73,64 +55,43 @@ def login():
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
 
-# Route to create EC2 instance for the authenticated user
 @app.route('/create_instance', methods=['POST'])
 def create_instance_route():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
     
-    # Validate user authentication
-    print(f"Received username: {username}, password: {password}")
+    # Validate user
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
-        print("Authentication failed.")
         return jsonify({'error': 'Unauthorized'}), 403
     
-    # Get instance parameters from request body
     instance_type = data.get('instance_type')
     os_type = data.get('os_type')
     
-    # Create instance for user
     instance_id = create_instance(username, instance_type, os_type)
-    
-    if instance_id:
-        return jsonify({'instance_id': instance_id})
-    else:
-        return jsonify({'error': 'Failed to create instance'}), 500
+    return jsonify({'instance_id': instance_id})
 
-# Route to fetch the instances of the authenticated user
 @app.route('/instances', methods=['GET'])
 def get_instances():
     username = request.headers.get('username')
     password = request.headers.get('password')
     
-    print(f"Fetching instances for user: {username}")
-    
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
-        print("Authentication failed.")
         return jsonify({'error': 'Unauthorized'}), 403
     
-    if not user['instances']:
-        print(f"No instances found for {username}.")
-        return jsonify({'error': 'No instances found'}), 404
-    
-    print(f"Instances for {username}: {user['instances']}")
     return jsonify({'instances': user['instances']})
 
-# Route to delete an EC2 instance for the authenticated user
 @app.route('/delete_instance', methods=['POST'])
 def delete_instance():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
     
-    # Validate user authentication
-    print(f"Received username: {username}, password: {password}")
+    # Validate user
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
-        print("Authentication failed.")
         return jsonify({'error': 'Unauthorized'}), 403
 
     instance_id = data.get('instance_id')
@@ -139,17 +100,10 @@ def delete_instance():
         return jsonify({'error': 'Cannot delete instance created by another user'}), 403
 
     # Terminate EC2 instance
-    try:
-        ec2_client.terminate_instances(InstanceIds=[instance_id])
-        print(f"Terminated instance with ID: {instance_id}")
-    except Exception as e:
-        print(f"Error terminating instance: {e}")
-        return jsonify({'error': 'Failed to delete instance'}), 500
-    
+    ec2_client.terminate_instances(InstanceIds=[instance_id])
     user['instances'].remove(instance_id)
     
     return jsonify({'message': 'Instance deleted successfully'})
 
-# Running the app
 if __name__ == '__main__':
     app.run(debug=True)
