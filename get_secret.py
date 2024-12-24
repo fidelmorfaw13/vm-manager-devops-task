@@ -5,7 +5,7 @@ import json
 import os
 
 def get_secret():
-    secret_name = "vm-manager-devops-task-secret"  
+    secret_name = "vm-manager-devops-task-secrets"  
     
     
     aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
