@@ -33,12 +33,13 @@ jobs:
           echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=us-east-2" >> $GITHUB_ENV
-          ls
+        
 
       # Step 5: Run the Python script to fetch the secret and write to aws_credentials.ini
       - name: Fetch secret and write to aws_credentials.ini
         run: |
           python get_secret.py
+          ls
 
   sonarqube:
     name: SonarQube
