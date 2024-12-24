@@ -57,7 +57,7 @@ jobs:
       - name: Fetch secret and write to aws_credentials.ini
         run: |
           python get_secret.py
-          ls 
+          cat aws_credentials.ini
 
       # Login to Amazon ECR
       - name: Login to Amazon ECR
