@@ -26,21 +26,22 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install boto3
-
       # Step 4: Set up AWS credentials using GitHub Secrets (Ensure AWS SDK can use credentials)
       - name: Configure AWS credentials
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2
         run: |
-          # Confirm AWS credentials are set
-          aws sts get-caller-identity
+          echo "Setting AWS credentials"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=us-east-2" >> $GITHUB_ENV
+          
+          # Check if the environment variables are set correctly
+          echo "AWS Access Key: $AWS_ACCESS_KEY_ID"
+          echo "AWS Secret Key: $AWS_SECRET_ACCESS_KEY"
 
       # Step 5: Run the Python script to fetch the secret and write to aws_credentials.ini
       - name: Fetch secret and write to aws_credentials.ini
         run: |
-          python3 get_secret.py
+          python get_secret.py
 
   sonarqube:
     name: SonarQube
