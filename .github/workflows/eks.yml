@@ -41,7 +41,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-2
       
       - name: Set up Python 3.x
         uses: actions/setup-python@v4
@@ -67,18 +67,18 @@ jobs:
       - name: Build and push backend image
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG} .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}
-          echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG} .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}
+          echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
 
       # Build and push the frontend image
       - name: Build and push frontend image
         run: |
           IMAGE_TAG=${{ github.sha }}
           cd templates
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG} .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG}
-          echo "FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG}" >> $GITHUB_ENV
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG} .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG}
+          echo "FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG}" >> $GITHUB_ENV
 
   deploy_to_eks:
     name: Deploy to EKS
@@ -94,7 +94,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: us-east-2
 
       # Install kubectl to interact with EKS
       - name: Install kubectl
@@ -105,7 +105,7 @@ jobs:
       # Configure kubeconfig using AWS CLI
       - name: Configure kubeconfig
         run: |
-          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
+          aws eks --region us-east-2 update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
       # Deploy the backend to EKS
       - name: Deploy backend to EKS
