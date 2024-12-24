@@ -7,6 +7,39 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
+  fetch-secret-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Python
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      # Step 3: Install dependencies (boto3)
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+
+      # Step 4: Set up AWS credentials using GitHub Secrets
+      - name: Set up AWS credentials
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          aws sts get-caller-identity  # To validate AWS credentials
+
+      # Step 5: Run the Python script to fetch the secret and write to aws_credentials.ini
+      - name: Fetch secret and write to aws_credentials.ini
+        run: |
+          python3 get_secret.py
+
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
