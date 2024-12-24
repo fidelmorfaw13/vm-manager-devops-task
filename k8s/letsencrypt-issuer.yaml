@@ -8,8 +8,8 @@ spec:
     server: https://acme-v02.api.letsencrypt.org/directory
     email: mlekefua@gmail.com
     privateKeySecretRef:
-      name: letsencrypt-prod-key  # The name of the secret where the private key will be stored
+      name: letsencrypt-prod-key 
     solvers:
       - http01:
           ingress:
-            class: nginx  # Use "nginx" for the NGINX ingress controller
+            class: nginx  
