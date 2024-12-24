@@ -7,39 +7,6 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
-  fetch-secret-and-save:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # Step 2: Set up Python
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.x
-
-      # Step 3: Install dependencies (boto3)
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install boto3
-      # Step 4: Set up AWS credentials using GitHub Secrets (Ensure AWS SDK can use credentials)
-      - name: Configure AWS credentials
-        run: |
-          echo "Setting AWS credentials"
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=us-east-2" >> $GITHUB_ENV
-        
-
-      # Step 5: Run the Python script to fetch the secret and write to aws_credentials.ini
-      - name: Fetch secret and write to aws_credentials.ini
-        run: |
-          python get_secret.py
-          ls
 
   sonarqube:
     name: SonarQube
@@ -69,12 +36,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
+       
+     
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install boto3
+      - name: Configure AWS credentials
+        run: |
+          echo "Setting AWS credentials"
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=us-east-2" >> $GITHUB_ENV
+        
+      - name: Fetch secret and write to aws_credentials.ini
+        run: |
+          python get_secret.py
+          ls
+        
 
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
