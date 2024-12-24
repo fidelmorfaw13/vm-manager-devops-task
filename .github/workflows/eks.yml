@@ -27,13 +27,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install boto3
 
-      # Step 4: Set up AWS credentials using GitHub Secrets
-      - name: Set up AWS credentials
+      # Step 4: Set up AWS credentials using GitHub Secrets (Ensure AWS SDK can use credentials)
+      - name: Configure AWS credentials
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2
         run: |
-          aws sts get-caller-identity  # To validate AWS credentials
+          # Confirm AWS credentials are set
+          aws sts get-caller-identity
 
       # Step 5: Run the Python script to fetch the secret and write to aws_credentials.ini
       - name: Fetch secret and write to aws_credentials.ini
