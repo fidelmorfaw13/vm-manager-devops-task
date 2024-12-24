@@ -7,17 +7,16 @@ import os
 def get_secret():
     secret_name = "vm-manager-devops-task-secret"  
     region_name = "us-east-2"  
-
-    # Get AWS credentials from environment variables (set by GitHub Actions)
+    
     aws_access_key_id = os.getenv('AWS_ACCESS_KEY_ID')
     aws_secret_access_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-    aws_region = os.getenv('AWS_DEFAULT_REGION', region_name) 
+    aws_region = os.getenv('AWS_DEFAULT_REGION')  
 
     if not aws_access_key_id or not aws_secret_access_key:
         print("Error: AWS credentials not set.")
         raise ValueError("AWS credentials are not available in the environment.")
 
-    # Create a session using the AWS credentials
+    
     session = boto3.Session(
         aws_access_key_id=aws_access_key_id,
         aws_secret_access_key=aws_secret_access_key,
@@ -33,7 +32,7 @@ def get_secret():
         print(f"Error fetching secret: {e}")
         raise e
 
-    
+    # The secret string is assumed to be in JSON format
     secret = get_secret_value_response['SecretString']
 
     try:
@@ -42,23 +41,26 @@ def get_secret():
         print(f"Error decoding secret JSON: {e}")
         raise e
 
-    # Now let's write these values into aws_credentials.ini
+   
+    print(f"Region from secret: {secret_dict.get('region', aws_region)}")
+
+   
     config = configparser.ConfigParser()
-    
-    # Ensure we have a 'default' section in the INI file
+
+   
     if not config.has_section('default'):
         config.add_section('default')
 
-    
+   
     aws_access_key_id = secret_dict.get('aws_access_key_id', aws_access_key_id)
     aws_secret_access_key = secret_dict.get('aws_secret_access_key', aws_secret_access_key)
-    aws_region = secret_dict.get('region', aws_region)  # If region exists in secret, use it
+    aws_region = secret_dict.get('region', aws_region)  # Fetch the region from the secret
 
-   
+    
     config['default'] = {
         'aws_access_key_id': aws_access_key_id,
         'aws_secret_access_key': aws_secret_access_key,
-        'region': aws_region  
+        'region': aws_region  # This should now have the correct region from the secret
     }
 
     
