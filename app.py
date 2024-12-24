@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import flask-cors
 import boto3
-import configparser
+import json
 from werkzeug.security import generate_password_hash, check_password_hash
+from botocore.exceptions import ClientError
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -10,21 +11,35 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
-# Load AWS credentials from custom file
-config = configparser.ConfigParser()
-config.read('aws_credentials.ini')
+# Load AWS credentials securely
+def get_secret(secret_name, region_name):
+    session = boto3.session.Session()
+    client = session.client(service_name='secretsmanager', region_name=region_name)
 
-aws_access_key = config['default']['aws_access_key_id']
-aws_secret_key = config['default']['aws_secret_access_key']
-region = config['default']['region']
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+    except ClientError as e:
+        raise e
 
-# AWS EC2 client using credentials from the file
+    secret = get_secret_value_response['SecretString']
+    return json.loads(secret)
+
+# Get credentials from Secrets Manager
+secret_name = "vm-manager-devops-task-secret"
+region_name = "us-east-2"
+credentials = get_secret(secret_name, region_name)
+
+aws_access_key = credentials['aws_access_key_id']
+aws_secret_key = credentials['aws_secret_access_key']
+region = credentials['region']
+
+# AWS EC2 client using credentials from Secrets Manager
 ec2_client = boto3.client('ec2', 
                           aws_access_key_id=aws_access_key,
                           aws_secret_access_key=aws_secret_key,
                           region_name=region)
 
-# Sample in-memory user storage
+# Sample in-memory user storage (could be improved by using a DB)
 users = {
     'user1': {'password': generate_password_hash('password1'), 'instances': []},
     'user2': {'password': generate_password_hash('password2'), 'instances': []},
