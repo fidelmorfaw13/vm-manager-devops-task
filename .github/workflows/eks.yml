@@ -65,7 +65,7 @@ jobs:
       # Build and push the backend image
       - name: Build and push backend image
         run: |
-          IMAGE_TAG=${{ github.sha }}
+          IMAGE_TAG=latest
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG} .
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}
           echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
