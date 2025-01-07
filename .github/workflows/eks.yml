@@ -101,7 +101,7 @@ jobs:
         with:
           kubectl-version: 'latest'
 
-      # Configure kubeconfig using AWS CLI
+      # Configure kubeconfig using AWS CLI 
       - name: Configure kubeconfig
         run: |
           aws eks --region us-east-2 update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
