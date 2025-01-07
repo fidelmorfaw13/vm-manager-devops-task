@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS  # Import flask-cors
 import boto3
-import configparser
+import json
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # Initialize Flask app
@@ -10,16 +10,22 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 
-# Load AWS credentials from custom file
-config = configparser.ConfigParser()
-config.read('aws_credentials.ini')
+# Retrieve AWS credentials from Secrets Manager
+def get_aws_credentials(secret_name, region_name='us-east-1'):
+    secrets_client = boto3.client('secretsmanager', region_name=region_name)
+    try:
+        response = secrets_client.get_secret_value(SecretId=secret_name)
+        secret = json.loads(response['SecretString'])
+        return secret['aws_access_key_id'], secret['aws_secret_access_key'], secret['region']
+    except Exception as e:
+        raise RuntimeError(f"Failed to retrieve AWS credentials: {e}")
 
-aws_access_key = config['default']['aws_access_key_id']
-aws_secret_key = config['default']['aws_secret_access_key']
-region = config['default']['region']
+# Fetch credentials from Secrets Manager
+SECRET_NAME = 'my-app-aws-credentials'  # Replace with your secret name
+aws_access_key, aws_secret_key, region = get_aws_credentials(SECRET_NAME)
 
-# AWS EC2 client using credentials from the file
-ec2_client = boto3.client('ec2', 
+# AWS EC2 client using credentials from Secrets Manager
+ec2_client = boto3.client('ec2',
                           aws_access_key_id=aws_access_key,
                           aws_secret_access_key=aws_secret_key,
                           region_name=region)
@@ -48,7 +54,7 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    
+   
     user = users.get(username)
     if user and check_password_hash(user['password'], password):
         return jsonify({'message': 'Login successful'})
@@ -60,15 +66,15 @@ def create_instance_route():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
-    
+   
     # Validate user
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
         return jsonify({'error': 'Unauthorized'}), 403
-    
+   
     instance_type = data.get('instance_type')
     os_type = data.get('os_type')
-    
+   
     instance_id = create_instance(username, instance_type, os_type)
     return jsonify({'instance_id': instance_id})
 
@@ -76,11 +82,11 @@ def create_instance_route():
 def get_instances():
     username = request.headers.get('username')
     password = request.headers.get('password')
-    
+   
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
         return jsonify({'error': 'Unauthorized'}), 403
-    
+   
     return jsonify({'instances': user['instances']})
 
 @app.route('/delete_instance', methods=['POST'])
@@ -88,21 +94,21 @@ def delete_instance():
     data = request.get_json()
     username = request.headers.get('username')
     password = request.headers.get('password')
-    
+   
     # Validate user
     user = users.get(username)
     if not user or not check_password_hash(user['password'], password):
         return jsonify({'error': 'Unauthorized'}), 403
 
     instance_id = data.get('instance_id')
-    
+   
     if instance_id not in user['instances']:
         return jsonify({'error': 'processing'}), 403
 
     # Terminate EC2 instance
     ec2_client.terminate_instances(InstanceIds=[instance_id])
     user['instances'].remove(instance_id)
-    
+   
     return jsonify({'message': 'Instance deleted successfully'})
 
 if __name__ == '__main__':
