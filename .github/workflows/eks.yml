@@ -33,16 +33,17 @@ jobs:
     needs: sonarqube  # Ensure SonarQube completes first
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      # Configure AWS credentials once and use it in subsequent steps
+      # Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: ${{ secrets.AWS_REGION }}
       
+      # Set up Python
       - name: Set up Python 3.x
         uses: actions/setup-python@v4
         with:
@@ -66,18 +67,18 @@ jobs:
       - name: Build and push backend image
         run: |
           IMAGE_TAG=latest
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG} .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}
-          echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
-          ls
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG} .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}
+          echo "BACKEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${IMAGE_TAG}" >> $GITHUB_ENV
+
       # Build and push the frontend image
       - name: Build and push frontend image
         run: |
           IMAGE_TAG=${{ github.sha }}
           cd templates
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG} .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG}
-          echo "FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG}" >> $GITHUB_ENV
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG} .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG}
+          echo "FRONTEND_IMAGE=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${IMAGE_TAG}" >> $GITHUB_ENV
 
   deploy_to_eks:
     name: Deploy to EKS
@@ -85,7 +86,7 @@ jobs:
     needs: build_and_push
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # Reuse AWS credentials from the previous job
       - name: Configure AWS credentials
@@ -93,25 +94,25 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: ${{ secrets.AWS_REGION }}
 
-      # Install kubectl to interact with EKS
+      # Install kubectl
       - name: Install kubectl
         uses: azure/setup-kubectl@v3
         with:
           kubectl-version: 'latest'
 
-      # Configure kubeconfig using AWS CLI 
+      # Configure kubeconfig using AWS CLI
       - name: Configure kubeconfig
         run: |
-          aws eks --region us-east-2 update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
+          aws eks --region ${{ secrets.AWS_REGION }} update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
-      # Deploy the backend to EKS
+      # Deploy backend to EKS
       - name: Deploy backend to EKS
         run: |
           kubectl set image deployment/backend backend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${{ github.sha }}
 
-      # Deploy the frontend to EKS
+      # Deploy frontend to EKS
       - name: Deploy frontend to EKS
         run: |
           kubectl set image deployment/frontend frontend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
