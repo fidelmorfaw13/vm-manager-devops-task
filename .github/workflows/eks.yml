@@ -1,4 +1,4 @@
-Build and Deploy with SonarQube
+name: Build and Deploy with SonarQube
 
 on:
   push:
@@ -73,7 +73,7 @@ jobs:
       # Build and push the frontend image
       - name: Build and push frontend image
         run: |
-          IMAGE_TAG=${{ github.sha }}
+          IMAGE_TAG=latest
           cd templates
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG} .
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:${IMAGE_TAG}
