@@ -106,12 +106,12 @@ jobs:
         run: |
           aws eks --region us-east-2 update-kubeconfig --name ${{ secrets.CLUSTER_NAME }}
 
-      # Deploy the backend to EKS
+      # Deploy the backend to EKS using the `latest` tag
       - name: Deploy backend to EKS
         run: |
-          kubectl set image deployment/backend backend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:${{ github.sha }}
+          kubectl set image deployment/backend backend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/backend:latest
 
-      # Deploy the frontend to EKS
+      # Deploy the frontend to EKS using the `latest` tag
       - name: Deploy frontend to EKS
         run: |
-          kubectl set image deployment/frontend frontend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/frontend:${{ github.sha }}
+          kubectl set image deployment/frontend frontend=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-2.amazonaws.com/frontend:latest
